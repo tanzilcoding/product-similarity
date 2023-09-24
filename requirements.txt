@@ -1,0 +1,10 @@
+langchain==0.0.263
+openai==0.27.8
+pinecone_client==2.2.2
+PyPDF2==3.0.1
+streamlit==1.25.0
+streamlit_chat==0.1.1
+streamlit_js_eval==0.1.5
+tiktoken==0.4.0
+tqdm==4.66.1
+typing_extensions==4.7.1
