@@ -193,11 +193,125 @@ try:
         query = ' '.join(word_list)
 
         if len(word_list) < 2:
-            docs_and_scores = vectorstore_1.similarity_search_with_score(
-                query,
-            )
+            # template = """
+            # My search term is delimited by triple backticks:
+            # ```{query}```
 
-            search_data = get_search_data(docs_and_scores)
+            # I want to find out the most relevant keywords that I can use on online grocery stores.
+            # I want two word keywords. Give me the top five most relevant keywords related to my search term.
+            # Separate the keywords with comma. Give only the comma separated keywords and nothing else.
+            # """
+
+            template = """
+            My search term is delimited by triple backticks: 
+            ```{query}```
+            
+            I want to find out the most relevant keywords that I can use on online grocery stores. 
+            I want three word keywords. Give me the top three most relevant keywords related to my search term. 
+            Separate the keywords with comma. Give only the comma separated keywords and nothing else.
+
+            Grocery keywords related to Eggs:
+            - Free Range Eggs
+            - Range Eggs Large
+            - Range Eggs Medium
+
+            Grocery keywords related to Milk:
+            - Semi Skimmed Milk
+            - British Skimmed Milk
+            - British Whole Milk
+
+            Grocery keywords related to bread:
+            - Sliced White Bread
+            - Medium White Bread
+            - Sliced Wholemeal Bread
+
+            Grocery keywords related to Chicken:
+            - fresh whole chicken
+            - fresh chicken legs
+            - fresh chicken legs breasts
+            - fresh skinless chicken
+
+            Grocery keywords related to Chicken breasts:
+            - Fresh Chicken Breast Fillets
+            - Fresh Chicken Breast Skinless & Boneless
+            - Fresh Chicken Breast Boneless
+            - Fresh Diced Chicken Breast
+
+            Grocery keywords related to Lettuce:
+            - Iceberg Lettuce
+            - Little Gem Lettuce
+            - Sweet Gem Lettuce
+
+            Grocery keywords related to Tomatoes:
+            - Classic Round Tomatoes
+            - Cherry Tomatoes
+            - Baby Plum Tomatoes
+
+            Grocery keywords related to Bananas:
+            - Bananas Loose
+            - Fairtrade Bananas
+
+            Grocery keywords related to Apples:
+            - Royal Gala Apples
+            - Braeburn Apples
+            - Pink Lady Apples
+
+            Grocery keywords related to Rice:
+            - Basmati Rice 1kg
+            - White Rice 1kg
+            - Long Grain Rice
+            - Long White Rice
+
+            Grocery keywords related to Pasta:
+            - Fusilli 1kg
+            - Penne 1kg
+            - Rigatoni 1kg
+            """
+
+            system_message_prompt = SystemMessagePromptTemplate.from_template(
+                template)
+
+            human_template = "{query}"
+            human_message_prompt = HumanMessagePromptTemplate.from_template(
+                human_template)
+
+            chat_prompt = ChatPromptTemplate.from_messages(
+                [system_message_prompt, human_message_prompt])
+
+            chain = LLMChain(llm=llm, prompt=chat_prompt)
+
+            response = chain.run(
+                {"query": query})
+
+            keyword_list = response.split(",")
+
+            print("========================================================")
+            for keyword in keyword_list:
+                keyword = keyword.strip()
+                print(f'keyword: {keyword}')
+                docs_and_scores = vectorstore_2.similarity_search_with_score(
+                    keyword,
+                )
+
+                search_data = search_data + get_search_data(docs_and_scores)
+
+            target_column = "score"
+            is_reverse_sort = True
+            temp_search_data = sorted(
+                search_data, key=lambda d: d[target_column.lower()], reverse=is_reverse_sort)
+            search_data = []
+            title_list = []
+            for temp_search in temp_search_data:
+                title = temp_search["title"]
+                title = title.strip()
+                title = title.lower()
+                if title not in title_list:
+                    title_list.append(title)
+                    search_data.append(temp_search)
+
+                if len(search_data) >= 4:
+                    break
+
         # elif len(word_list) == 2:
         else:
             # Step 1: We shall look into the product titles for al least 3 products
@@ -247,9 +361,6 @@ try:
 
                 most_relevant_product_title = chain.run(
                     {"query": query, "product_title_list": product_title_list})
-
-                print(
-                    f'most_relevant_product_title: {most_relevant_product_title}')
 
                 docs_and_scores = vectorstore_1.similarity_search_with_score(
                     most_relevant_product_title,
