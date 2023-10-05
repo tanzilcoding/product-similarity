@@ -15,6 +15,13 @@ from requests_html import HTMLSession
 from io import StringIO
 from html.parser import HTMLParser
 
+# Setting page title and header
+st.set_page_config(page_title="Save Sansbury Search Results",
+                   page_icon=":robot_face:")
+st.markdown("<h1 style='text-align: center;'>Save Sansbury Search Results</h1>",
+            unsafe_allow_html=True)
+
+
 # python scrape ajax page
 
 # try:
@@ -88,20 +95,23 @@ try:
                             product_title = product_title_link.text
                             csv_data.append([keyword, product_title])
 
-                cwd = os.getcwd()
-                csv_file = f'{cwd}/sainsbury-search-result-data.csv'
+            cwd = os.getcwd()
+            csv_file = f'{cwd}/sainsbury-search-result-data.csv'
 
-                if len(csv_data) > 0:
-                    # create a file called test.csv
-                    # and store it in a temporary variable
-                    with open(csv_file, 'w+') as csv_file:
-                        # pass the temp variable to csv.writer
-                        # function
-                        csv_writer = csv.writer(csv_file)
+            if len(csv_data) > 0:
+                # create a file called test.csv
+                # and store it in a temporary variable
+                with open(csv_file, 'w+') as csv_file:
+                    # pass the temp variable to csv.writer
+                    # function
+                    csv_writer = csv.writer(csv_file)
 
-                        # pass the row values to be stored in
-                        # different rows
-                        csv_writer.writerows(csv_data)
+                    # pass the row values to be stored in
+                    # different rows
+                    csv_writer.writerows(csv_data)
+
+                st.success(
+                    "Sainsbury search data are saved in a .csv file.")
 
 except Exception as e:
     error_message = ''
