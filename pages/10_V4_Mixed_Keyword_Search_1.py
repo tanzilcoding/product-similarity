@@ -1,6 +1,8 @@
 import os
 import sys
+import csv
 import time
+import random
 import json
 import openai
 import pinecone
@@ -8,6 +10,9 @@ import traceback
 import streamlit as st
 import pandas as pd
 import numpy as np
+import urllib.parse
+import requests
+from bs4 import BeautifulSoup
 from streamlit_chat import message
 from langchain.vectorstores import Pinecone
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -407,19 +412,50 @@ try:
             else:
                 search_term_list.append(search_term)
 
+        sainsbury_product_data = []
+        cwd = os.getcwd()
+        csv_file = f'{cwd}/sainsbury-search-result-data.csv'
+        with open(csv_file, newline='') as f:
+            reader = csv.reader(f)
+            sainsbury_product_data = list(reader)
         # result_data = []
         counter = 0
         for search_term in search_term_list:
             enriched_query_list = get_enriched_query_list(search_term)
+            match_score = "Fetch Failed"
+            # Making a GET request
+            sainsbury_product_title_list = []
+            for sainsbury_product in sainsbury_product_data:
+                keyword = sainsbury_product[0]
+                keyword = keyword.strip()
+                title = sainsbury_product[1]
+
+                if search_term.lower() == keyword.lower():
+                    sainsbury_product_title_list.append(title)
+            # print(sainsbury_product_title_list)
+
             for enriched_query in enriched_query_list:
                 counter = counter + 1
                 similar_product_list = get_similar_product_list(enriched_query)
                 image_url_1 = ""
                 image_url_2 = ""
                 image_url_3 = ""
+                title_1 = similar_product_list[0]["title"]
+                title_1 = title_1.strip()
+                title_1 = title_1.lower()
+                title_2 = similar_product_list[1]["title"]
+                title_2 = title_2.strip()
+                title_2 = title_2.lower()
+                title_3 = similar_product_list[2]["title"]
+                title_3 = title_3.strip()
+                title_3 = title_3.lower()
+                product_1_position = 0
+                product_2_position = 0
+                product_3_position = 0
                 match_1 = ""
                 match_2 = ""
                 match_3 = ""
+
                 if len(similar_product_list) > 0:
                     image_url_1 = similar_product_list[0]["image"]
                     match_1 = f'{similar_product_list[0]["price"]} - {similar_product_list[0]["title"]}'
@@ -429,8 +465,30 @@ try:
                 if len(similar_product_list) > 2:
                     image_url_3 = similar_product_list[2]["image"]
                     match_3 = f'{similar_product_list[2]["price"]} - {similar_product_list[2]["title"]}'
+
+                total_products_in_top_10 = 0
+                counter = 0
+                if len(sainsbury_product_title_list) > 0:
+                    for sainsbury_product_title in sainsbury_product_title_list:
+                        counter = counter + 1
+                        sainsbury_product_title = sainsbury_product_title.strip()
+                        sainsbury_product_title = sainsbury_product_title.lower()
+                        if sainsbury_product_title == title_1:
+                            product_1_position = counter
+                            if counter <= 10:
+                                total_products_in_top_10 = total_products_in_top_10 + 1
+                        if sainsbury_product_title == title_2:
+                            product_2_position = counter
+                            if counter <= 10:
+                                total_products_in_top_10 = total_products_in_top_10 + 1
+                        if sainsbury_product_title == title_3:
+                            product_3_position = counter
+                            if counter <= 10:
+                                total_products_in_top_10 = total_products_in_top_10 + 1
+
+                    match_score = f'{total_products_in_top_10} ({product_1_position}, {product_2_position}, {product_3_position})'
                 search_data.append({"Index": counter, "List Item": search_term, "Enriched Query": enriched_query, "Image 1": image_url_1, "Match 1": match_1, "Image 2": image_url_2, "Match 2": match_2, "Image 3": image_url_3,
-                                    "Match 3": match_3, "Match Score": f'https://www.sainsburys.co.uk/gol-ui/SearchResults/{search_term}'})
+                                    "Match 3": match_3, "Match Score": match_score})
 
         ######################################################
 
@@ -468,7 +526,7 @@ try:
                 st.data_editor(
                     df,
                     column_config={
-                        "Match Score": st.column_config.LinkColumn("Match Score"),
+                        # "Match Score": st.column_config.LinkColumn("Match Score"),
                         "Image 1": st.column_config.ImageColumn(
                             "Image 1", help="Streamlit app preview screenshots"
                         ),
@@ -503,4 +561,4 @@ except Exception as e:
     st.error(f'Error Type: {exc_type}', icon="🚨")
     st.error(f'File Name: {fname}', icon="🚨")
     st.error(f'Line Number: {exc_tb.tb_lineno}', icon="🚨")
-    print(traceback.format_exc())
+    st.error(traceback.format_exc())
