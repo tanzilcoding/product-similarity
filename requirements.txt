@@ -10,3 +10,5 @@ tqdm==4.66.1
 typing_extensions==4.7.1
 selenium==4.13.0
 beautifulsoup4==4.12.2
+requests==2.31.0
+requests-html==0.10.0
